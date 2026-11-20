@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fixing Corporate Proxy Errors (HTTP 407) in Google Antigravity, VS Code, and Developer Tools</title>
+  <style>
+    :root {
+      --primary: #1a73e8;
+      --bg: #ffffff;
+      --text: #202124;
+      --text-muted: #5f6368;
+      --border: #dadce0;
+      --card-bg: #f8f9fa;
+      --code-bg: #1e1e1e;
+      --code-text: #d4d4d4;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.65;
+      color: var(--text);
+      background-color: var(--bg);
+      max-width: 820px;
+      margin: 0 auto;
+      padding: 40px 20px;
+    }
+    h1 {
+      font-size: 2.2rem;
+      font-weight: 800;
+      line-height: 1.25;
+      margin-bottom: 8px;
+      color: #111;
+    }
+    .subtitle {
+      font-size: 1.2rem;
+      color: var(--text-muted);
+      margin-top: 0;
+      margin-bottom: 24px;
+    }
+    .tldr-box {
+      background-color: #e8f0fe;
+      border-left: 4px solid var(--primary);
+      padding: 18px 20px;
+      border-radius: 4px;
+      margin: 28px 0;
+      font-size: 1.05rem;
+    }
+    .tldr-box strong {
+      color: #174ea6;
+    }
+    .warning-box {
+      background-color: #fce8e6;
+      border-left: 4px solid #d93025;
+      padding: 18px 20px;
+      border-radius: 4px;
+      margin: 28px 0;
+      font-size: 1.02rem;
+    }
+    .warning-box strong {
+      color: #a50e0e;
+    }
+    h2 {
+      font-size: 1.5rem;
+      margin-top: 40px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+    h3 {
+      font-size: 1.2rem;
+      margin-top: 24px;
+    }
+    p, li {
+      font-size: 1.05rem;
+    }
+    pre {
+      background: var(--code-bg);
+      color: var(--code-text);
+      padding: 16px;
+      border-radius: 8px;
+      overflow-x: auto;
+      font-size: 0.95rem;
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+    }
+    code {
+      background: #f1f3f4;
+      color: #c5221f;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.9em;
+      font-family: monospace;
+    }
+    pre code {
+      background: transparent;
+      color: inherit;
+      padding: 0;
+    }
+    .step-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    .step-number {
+      display: inline-block;
+      background: var(--primary);
+      color: #fff;
+      font-weight: bold;
+      width: 28px;
+      height: 28px;
+      line-height: 28px;
+      text-align: center;
+      border-radius: 50%;
+      margin-right: 8px;
+    }
+    .diagram-container {
+      background: #fafafa;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+      margin: 24px 0;
+      text-align: center;
+    }
+    .diagram-title {
+      font-weight: 700;
+      margin-bottom: 16px;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    /* VS Code Mockup Styles */
+    .vscode-window {
+      background: #1e1e1e;
+      border-radius: 8px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+      overflow: hidden;
+      margin: 28px 0;
+      border: 1px solid #333;
+      font-family: Consolas, "Courier New", monospace;
+    }
+    .vscode-titlebar {
+      background: #323233;
+      padding: 8px 14px;
+      display: flex;
+      align-items: center;
+      color: #cccccc;
+      font-size: 12px;
+      user-select: none;
+    }
+    .vscode-dots {
+      display: flex;
+      gap: 6px;
+      margin-right: 16px;
+    }
+    .vscode-dot {
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+    }
+    .dot-red { background: #ff5f56; }
+    .dot-yellow { background: #ffbd2e; }
+    .dot-green { background: #27c93f; }
+    .vscode-tabs {
+      background: #252526;
+      display: flex;
+      border-bottom: 1px solid #1e1e1e;
+    }
+    .vscode-tab {
+      background: #1e1e1e;
+      color: #ffffff;
+      padding: 8px 16px;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-top: 2px solid #007acc;
+    }
+    .vscode-tab-icon { color: #cbcb41; font-weight: bold; }
+    .vscode-body {
+      display: flex;
+      padding: 16px 12px;
+      font-size: 13.5px;
+      line-height: 1.5;
+    }
+    .vscode-lines {
+      color: #858585;
+      padding-right: 16px;
+      text-align: right;
+      user-select: none;
+    }
+    .vscode-code {
+      color: #d4d4d4;
+      white-space: pre;
+      overflow-x: auto;
+    }
+    .json-key { color: #9cdcfe; }
+    .json-string { color: #ce9178; }
+    .json-bool { color: #569cd6; }
+    .json-comment { color: #6a9955; font-style: italic; }
+  </style>
+</head>
+<body>
+
+  <h1>Fixing Corporate Proxy Errors (HTTP 407) in Google Antigravity, VS Code, and Developer Tools</h1>
+  <p class="subtitle">A practical guide to solving corporate NTLM/Kerberos proxy roadblocks across AI IDEs and CLI tools using Px Proxy — showcased with Google Antigravity.</p>
+
+  <div class="tldr-box">
+    <strong>TL;DR:</strong> If <strong>Google Antigravity</strong>, VS Code, or other developer tools fail with <code>HTTP 407 Proxy Authentication Required</code>, your corporate firewall/proxy requires Windows domain credentials (NTLM/Kerberos) that most IDEs and CLI tools cannot negotiate directly. Running <a href="https://pypi.org/project/px-proxy/" target="_blank"><strong>px-proxy</strong></a> locally on <code>127.0.0.1:3128</code> solves this across your entire dev environment by automatically signing outbound requests with your logged-in Windows session — with zero plaintext passwords required.
+  </div>
+
+  <h2>What Causes Error 407?</h2>
+  <p>In enterprise networks (e.g., banks, insurance, and large corporate environments), all outbound internet traffic must pass through an authenticated upstream proxy.</p>
+  <ul>
+    <li><strong>Your browser (Chrome, Edge):</strong> Transparently negotiates Windows domain credentials (NTLM or Kerberos) in the background using native OS integration.</li>
+    <li><strong>AI IDEs &amp; Developer Tools (Google Antigravity, VS Code, Cursor, <code>gcloud</code>, <code>git</code>, <code>npm</code>):</strong> Often lack built-in support for multi-step NTLM/Kerberos challenge-response handshakes, resulting in immediate <code>HTTP 407</code> failures when connecting to cloud services and AI APIs.</li>
+  </ul>
+
+  <div class="diagram-container">
+    <div class="diagram-title">Figure A: The Problem — Direct Connection Rejected</div>
+    <svg width="100%" height="220" viewBox="0 0 700 220" xmlns="http://www.w3.org/2000/svg">
+      <!-- Lifelines -->
+      <line x1="120" y1="40" x2="120" y2="200" stroke="#ccc" stroke-dasharray="4" stroke-width="2"/>
+      <line x1="380" y1="40" x2="380" y2="200" stroke="#ccc" stroke-dasharray="4" stroke-width="2"/>
+      <line x1="600" y1="40" x2="600" y2="200" stroke="#ccc" stroke-dasharray="4" stroke-width="2"/>
+      
+      <!-- Nodes -->
+      <rect x="30" y="10" width="180" height="30" rx="5" fill="#f1f3f4" stroke="#333" stroke-width="1.5"/>
+      <text x="120" y="30" font-size="12" font-weight="bold" text-anchor="middle" fill="#333">Antigravity / IDE / CLI</text>
+
+      <rect x="290" y="10" width="180" height="30" rx="5" fill="#f1f3f4" stroke="#333" stroke-width="1.5"/>
+      <text x="380" y="30" font-size="12" font-weight="bold" text-anchor="middle" fill="#333">Corporate Proxy</text>
+
+      <rect x="520" y="10" width="160" height="30" rx="5" fill="#f1f3f4" stroke="#333" stroke-width="1.5"/>
+      <text x="600" y="30" font-size="12" font-weight="bold" text-anchor="middle" fill="#333">Cloud &amp; AI APIs</text>
+
+      <!-- Message 1 -->
+      <line x1="120" y1="80" x2="380" y2="80" stroke="#1a73e8" stroke-width="2" marker-end="url(#arrow-blue)"/>
+      <text x="250" y="72" font-size="11" text-anchor="middle" fill="#1a73e8">1. CONNECT (e.g., googleapis.com)</text>
+
+      <!-- Message 2 -->
+      <line x1="380" y1="120" x2="120" y2="120" stroke="#d93025" stroke-width="2" marker-end="url(#arrow-red)"/>
+      <text x="250" y="112" font-size="11" text-anchor="middle" fill="#d93025">2. HTTP 407 Proxy Authentication Required (NTLM Challenge)</text>
+
+      <!-- Error Result -->
+      <circle cx="120" cy="160" r="14" fill="#d93025"/>
+      <text x="120" y="165" font-size="14" font-weight="bold" fill="#fff" text-anchor="middle">✕</text>
+      <text x="145" y="165" font-size="12" font-weight="bold" fill="#d93025">Connection Fails: Tool cannot answer NTLM challenge</text>
+
+      <!-- Arrow Markers -->
+      <defs>
+        <marker id="arrow-blue" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="#1a73e8"/>
+        </marker>
+        <marker id="arrow-red" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="#d93025"/>
+        </marker>
+      </defs>
+    </svg>
+  </div>
+
+  <p>For example, here is what happens when launching <strong>Google Antigravity</strong> behind a corporate proxy—it immediately fails to reach Google's OAuth and model endpoints because the proxy demands authentication:</p>
+
+  <div class="diagram-container">
+    <div class="diagram-title">Real-World Showcase: Google Antigravity Launch Error (HTTP 407)</div>
+    <img src="images/antigravity-proxy-auth-issue.png" alt="Error Loading Models: Get https://www.googleapis.com/oauth2/v2/userinfo: Proxy authentication required" style="max-width: 100%; height: auto; border-radius: 6px; border: 1px solid var(--border);">
+  </div>
+
+  <h2>How to Fix It?</h2>
+  <div class="warning-box">
+    <strong>⚠️ The "Quick Fix" You Should Avoid (Security Anti-Pattern):</strong>
+    <p style="margin-top: 8px; margin-bottom: 10px;">When facing Error 407, many developers take a shortcut for simplicity by hardcoding their corporate username and password directly inside <code>settings.json</code> or environment variables:</p>
+    <pre style="margin: 10px 0;"><code>{
+    "http.proxy": "http://user:pass@my.proxy.address:8080",
+    "http.proxyStrictSSL": false
+}</code></pre>
+    <p style="margin-bottom: 0;"><strong>Why this is unacceptable:</strong> While this may seem like a fast workaround, it is a risky solution that strictly violates enterprise security best practices. Storing corporate Active Directory credentials in plaintext on disk exposes them to local malware, unencrypted backups, screen shares, and accidental uploads via Settings Sync or Git repositories. Furthermore, it breaks every time your corporate password rotates (often locking out your Windows account) and fails completely if your proxy enforces strict NTLM/Kerberos authentication over Basic Auth. <strong>This approach is strongly not recommended.</strong></p>
+  </div>
+
+  <p><strong>Better Solution:</strong> Instead of hardcoding credentials in your IDE or shell profile, the secure approach is to run a lightweight local forwarder on your machine that handles NTLM/Kerberos authentication on behalf of all your tools. One popular open-source option is <a href="https://pypi.org/project/px-proxy/" target="_blank"><strong>px-proxy</strong></a>, a Python-based HTTP proxy server that automatically authenticates through an NTLM/Kerberos corporate proxy using your logged-in Windows session (via Windows SSPI). By routing Google Antigravity, VS Code, or CLI tools through <code>127.0.0.1:3128</code>, you seamlessly resolve <code>HTTP 407</code> errors without ever touching or storing your password.</p>
+
+  <div class="diagram-container">
+    <div class="diagram-title">Figure B: The Solution — Px Handles Windows Authentication Locally</div>
+    <svg width="100%" height="260" viewBox="0 0 740 260" xmlns="http://www.w3.org/2000/svg">
+      <!-- Lifelines -->
+      <line x1="90" y1="40" x2="90" y2="240" stroke="#ccc" stroke-dasharray="4" stroke-width="2"/>
+      <line x1="280" y1="40" x2="280" y2="240" stroke="#ccc" stroke-dasharray="4" stroke-width="2"/>
+      <line x1="490" y1="40" x2="490" y2="240" stroke="#ccc" stroke-dasharray="4" stroke-width="2"/>
+      <line x1="660" y1="40" x2="660" y2="240" stroke="#ccc" stroke-dasharray="4" stroke-width="2"/>
+
+      <!-- Nodes -->
+      <rect x="20" y="10" width="140" height="30" rx="5" fill="#f1f3f4" stroke="#333" stroke-width="1.5"/>
+      <text x="90" y="30" font-size="12" font-weight="bold" text-anchor="middle" fill="#333">Antigravity / Dev Tools</text>
+
+      <rect x="200" y="10" width="160" height="30" rx="5" fill="#e8f0fe" stroke="#1a73e8" stroke-width="2"/>
+      <text x="280" y="30" font-size="12" font-weight="bold" text-anchor="middle" fill="#1a73e8">Px Proxy (127.0.0.1)</text>
+
+      <rect x="410" y="10" width="160" height="30" rx="5" fill="#f1f3f4" stroke="#333" stroke-width="1.5"/>
+      <text x="490" y="30" font-size="12" font-weight="bold" text-anchor="middle" fill="#333">Corporate Proxy</text>
+
+      <rect x="590" y="10" width="140" height="30" rx="5" fill="#f1f3f4" stroke="#333" stroke-width="1.5"/>
+      <text x="660" y="30" font-size="12" font-weight="bold" text-anchor="middle" fill="#333">Cloud &amp; AI APIs</text>
+
+      <!-- Sequence Steps -->
+      <line x1="90" y1="70" x2="280" y2="70" stroke="#1a73e8" stroke-width="2" marker-end="url(#arrow-blue)"/>
+      <text x="185" y="62" font-size="10.5" text-anchor="middle" fill="#1a73e8">1. Plain local request</text>
+
+      <line x1="280" y1="95" x2="490" y2="95" stroke="#333" stroke-width="1.5" marker-end="url(#arrow-dark)"/>
+      <text x="385" y="87" font-size="10.5" text-anchor="middle" fill="#333">2. Forward CONNECT</text>
+
+      <line x1="490" y1="120" x2="280" y2="120" stroke="#ea8600" stroke-width="1.5" marker-end="url(#arrow-orange)"/>
+      <text x="385" y="112" font-size="10.5" text-anchor="middle" fill="#ea8600">3. 407 Auth Challenge</text>
+
+      <line x1="280" y1="150" x2="490" y2="150" stroke="#188038" stroke-width="2" marker-end="url(#arrow-green)"/>
+      <text x="385" y="142" font-size="10.5" font-weight="bold" text-anchor="middle" fill="#188038">4. Negotiates SSPI / NTLM Token</text>
+
+      <line x1="490" y1="175" x2="280" y2="175" stroke="#188038" stroke-width="1.5" marker-end="url(#arrow-green)"/>
+      <text x="385" y="167" font-size="10.5" text-anchor="middle" fill="#188038">5. 200 Connection OK</text>
+
+      <line x1="280" y1="200" x2="90" y2="200" stroke="#188038" stroke-width="1.5" marker-end="url(#arrow-green)"/>
+      <text x="185" y="192" font-size="10.5" text-anchor="middle" fill="#188038">6. 200 Tunnel Established</text>
+
+      <!-- Successful Outbound Tunnel -->
+      <line x1="90" y1="230" x2="660" y2="230" stroke="#188038" stroke-width="2.5" stroke-dasharray="6" marker-end="url(#arrow-green)"/>
+      <text x="375" y="222" font-size="11" font-weight="bold" text-anchor="middle" fill="#188038">✔ 7. End-to-End SSL Tunnel (OAuth, Gemini Streaming &amp; API Calls Complete)</text>
+
+      <!-- Arrow Markers -->
+      <defs>
+        <marker id="arrow-dark" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="#333"/>
+        </marker>
+        <marker id="arrow-orange" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="#ea8600"/>
+        </marker>
+        <marker id="arrow-green" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="#188038"/>
+        </marker>
+      </defs>
+    </svg>
+  </div>
+
+  <h2>The Solution Setup</h2>
+
+  <div class="step-card">
+    <h3><span class="step-number">1</span> Install and Run Px Proxy</h3>
+    <p>Open Command Prompt (<code>Win+R</code> &rarr; <code>cmd</code> &rarr; Enter) and run:</p>
+    <pre><code>pip install px-proxy
+python -m px --proxy=http://YOUR_CORP_PROXY:8080 --listen=127.0.0.1 --port=3128 --save
+start /min cmd /c "python -m px"</code></pre>
+    <p style="margin-bottom: 0; font-size: 0.95rem; color: var(--text-muted);">
+      <strong>💡 Tip:</strong> If <code>pip install</code> itself is blocked by the corporate proxy, download the standalone Windows binary (<code>px.exe</code>) directly from <a href="https://github.com/genotrance/px/releases" target="_blank">Px GitHub Releases</a> using your browser. You can also run <code>python -m px --install</code> once to automatically start Px in the background whenever you log into Windows.
+    </p>
+  </div>
+
+  <div class="step-card">
+    <h3><span class="step-number">2</span> Configure Google Antigravity / VS Code User Settings</h3>
+    <p>In <strong>Google Antigravity</strong> (or VS Code / Cursor), press <code>Ctrl+Shift+P</code> &rarr; select <strong>Preferences: Open User Settings (JSON)</strong> and add the following configuration:</p>
+    
+    <!-- VS Code UI Mockup Screenshot -->
+    <div class="vscode-window">
+      <div class="vscode-titlebar">
+        <div class="vscode-dots">
+          <div class="vscode-dot dot-red"></div>
+          <div class="vscode-dot dot-yellow"></div>
+          <div class="vscode-dot dot-green"></div>
+        </div>
+        <span>settings.json — Google Antigravity / Visual Studio Code</span>
+      </div>
+      <div class="vscode-tabs">
+        <div class="vscode-tab">
+          <span class="vscode-tab-icon">{}</span>
+          <span>settings.json</span>
+        </div>
+      </div>
+      <div class="vscode-body">
+        <div class="vscode-lines">
+1<br>2<br>3<br>4<br>5<br>6<br>7<br>8
+        </div>
+        <div class="vscode-code">{
+  <span class="json-comment">// Route IDE network calls to local Px forwarder</span>
+  <span class="json-key">"http.proxy"</span>: <span class="json-string">"http://127.0.0.1:3128"</span>,
+  <span class="json-comment">// Only set to false if your corporate proxy uses SSL inspection without system Root CA</span>
+  <span class="json-key">"http.proxyStrictSSL"</span>: <span class="json-bool">false</span>,
+  <span class="json-comment">// Enforce proxy setting across extension and agent child processes</span>
+  <span class="json-key">"http.proxySupport"</span>: <span class="json-string">"override"</span>
+}</div>
+      </div>
+    </div>
+    <p style="margin-bottom: 0; font-size: 0.95rem; color: var(--text-muted);">
+      Restart Google Antigravity after saving. Your OAuth sign-in, model loading, and agent streaming requests will now route cleanly through <code>127.0.0.1:3128</code>.
+    </p>
+  </div>
+
+  <div class="step-card">
+    <h3><span class="step-number">3</span> Bonus: Use the Same Local Proxy for CLI &amp; Other Dev Tools</h3>
+    <p>Because <code>px-proxy</code> is already running locally on port <code>3128</code>, you can fix <code>HTTP 407</code> errors across command-line tools (such as <code>gcloud</code>, <code>git</code>, <code>npm</code>, <code>pip</code>, and <code>curl</code>) or other IDEs by pointing standard proxy environment variables to the same local listener:</p>
+    <pre><code>set HTTP_PROXY=http://127.0.0.1:3128
+set HTTPS_PROXY=http://127.0.0.1:3128</code></pre>
+    <p style="margin-bottom: 0; font-size: 0.95rem; color: var(--text-muted);">
+      To make this permanent across terminal sessions (including integrated terminals inside Antigravity and VS Code), add <code>HTTP_PROXY</code> and <code>HTTPS_PROXY</code> to your Windows <strong>User Environment Variables</strong> pointing to <code>http://127.0.0.1:3128</code>.
+    </p>
+  </div>
+
+</body>
+</html>
